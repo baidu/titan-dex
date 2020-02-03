@@ -1,0 +1,16 @@
+apply plugin: 'java'
+
+[compileJava, compileTestJava, javadoc]*.options*.encoding = 'UTF-8'
+
+sourceCompatibility = 1.7
+
+dependencies {
+    implementation fileTree(dir: 'libs', include: ['*.jar'])
+    testCompile group: 'junit', name: 'junit', version: '4.11'
+    implementation project(':dex-core')
+    implementation project(':dex-io')
+    implementation 'org.smali:smali:2.2.7'
+}
+
+
+apply from: rootProject.file('buildSrc/release-publishing.gradle')

@@ -1,0 +1,53 @@
+apply from: rootProject.file('buildSrc/publish-config.gradle')
+apply plugin: 'maven-publish'
+
+sourceCompatibility = rootProject.ext.javaVersion
+targetCompatibility = rootProject.ext.javaVersion
+
+group = POM_GROUP_ID
+
+task sourcesJar(type: Jar) {
+    from sourceSets.main.java.srcDirs
+    classifier = 'sources'
+}
+
+task javadocJar(type: Jar, dependsOn: javadoc) {
+    classifier = 'javadoc'
+    from javadoc.destinationDir
+}
+
+//artifacts {
+//    //archives javadocJar
+//    archives sourcesJar
+//}
+
+publishing {
+    publications {
+        Titan(MavenPublication) {
+            from components.java
+            groupId = POM_GROUP_ID
+            artifactId = POM_ARTIFACT_ID
+            artifact sourcesJar
+//            artifact javadocJar
+            version = version
+
+            pom.withXml {
+                def root = asNode()
+                root.children().last() + pomConfig
+            }
+        }
+    }
+
+    repositories {
+        maven {
+            url uri(getRepositoryUrl())
+            if (needCredentials()) {
+                credentials {
+                    username getRepositoryUsername()
+                    password getRepositoryPassword()
+                }
+            }
+        }
+    }
+
+}

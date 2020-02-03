@@ -1,0 +1,15 @@
+apply plugin: 'java'
+
+[compileJava, compileTestJava, javadoc]*.options*.encoding = 'UTF-8'
+
+sourceCompatibility = 1.8
+
+dependencies {
+    testCompile group: 'junit', name: 'junit', version: '4.11'
+    implementation project(':dex-core')
+    implementation project(':dex-lib')
+    implementation project(':dex-io')
+    implementation project(':dex-extensions')
+    implementation project(':dex-smali')
+    testCompile 'com.google.guava:guava:17.0'
+}

@@ -1,0 +1,19 @@
+
+
+repositories {
+	mavenCentral()
+    jcenter()
+}
+
+
+
+dependencies {
+
+}
+
+
+[compileJava, compileTestJava]*.options*.encoding = 'UTF-8'
+
+
+
+

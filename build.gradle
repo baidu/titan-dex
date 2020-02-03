@@ -1,0 +1,37 @@
+
+buildscript {
+    repositories {
+        google()
+        mavenCentral()
+        jcenter()
+    }
+    dependencies {
+        classpath 'com.jfrog.bintray.gradle:gradle-bintray-plugin:1.8.4'
+        classpath 'com.squareup:javapoet:1.8.0'
+    }
+}
+
+
+ext {
+    minSdkVersion = 10
+    compileSdkVersion = 23
+    targetSdkVersion = compileSdkVersion
+    buildToolsVersion = '23.0.2'
+    javaVersion = JavaVersion.VERSION_1_8
+
+    GROUP = 'com.baidu.titan'
+    VERSION_NAME = "${VERSION_NAME}"
+}
+
+allprojects  {
+    apply plugin: 'maven'
+
+    group = rootProject.ext.GROUP
+    version = rootProject.ext.VERSION_NAME
+
+    repositories {
+        mavenCentral()
+        google()
+        jcenter()
+    }
+}

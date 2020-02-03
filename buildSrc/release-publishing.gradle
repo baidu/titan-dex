@@ -1,0 +1,66 @@
+/**
+ * Bintray release configuration
+ * */
+ext {
+    bintrayRepo = 'maven'
+    bintrayName = "${POM_GROUP_ID}:${POM_ARTIFACT_ID}"
+//    bintrayUserOrg = 'baidu'
+
+    publishedGroupId = POM_GROUP_ID
+    libraryName = 'Titan'
+    artifact = POM_ARTIFACT_ID
+    packagingType = POM_PACKAGING
+
+    libraryDescription = POM_DESCRIPTION
+
+    siteUrl = 'https://github.com/baidu/titan-dex'
+    gitUrl = 'https://github.com/baidu/titan-dex.git'
+    issueUrl = 'https://github.com/baidu/titan-dex/issues'
+
+    libraryVersion = rootProject.ext.VERSION_NAME
+
+    developerId = 'Baidu Searchbox'
+    developerName = 'Baidu Searchbox, Inc.'
+//    developerEmail = 'xx@baidu.com'
+
+    licenseName = 'The Apache Software License, Version 2.0'
+    licenseUrl = 'https://www.apache.org/licenses/LICENSE-2.0.txt'
+    allLicenses = ["Apache-2.0"]
+
+    pomConfig = {
+        name libraryName
+        description libraryDescription
+        url siteUrl
+        licenses {
+            license {
+                name licenseName
+                url licenseUrl
+                distribution "repo"
+            }
+        }
+        developers {
+            developer {
+                id developerId
+                name developerName
+//                email developerEmail
+            }
+        }
+
+        scm {
+            connection gitUrl
+            developerConnection gitUrl
+            url siteUrl
+        }
+    }
+}
+
+// Set up the Android Maven publication.
+//apply from: rootProject.file('jcenter/maven-install.gradle')
+if (project.hasProperty("android")) {
+    apply from: rootProject.file('buildSrc/android-artifacts.gradle')
+} else {
+    apply from: rootProject.file('buildSrc/java-artifacts.gradle')
+}
+
+// Publish on Bintray.
+apply from: rootProject.file('buildSrc/bintray.gradle')

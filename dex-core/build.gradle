@@ -1,0 +1,249 @@
+import com.squareup.javapoet.*
+
+import javax.lang.model.element.Modifier
+import java.util.regex.Matcher
+import java.util.regex.Pattern
+import java.util.stream.Collectors
+
+apply plugin: 'java'
+
+[compileJava, compileTestJava, javadoc]*.options*.encoding = 'UTF-8'
+
+sourceCompatibility = 1.7
+
+dependencies {
+    testCompile group: 'junit', name: 'junit', version: '4.11'
+}
+
+sourceSets {
+    main {
+        java {
+            srcDirs += project.file("${project.buildDir}/generated/java")
+        }
+    }
+}
+
+class Dop {
+    int opcode
+    String opcodeName
+    boolean hasResult
+    String ref
+    Format format
+    Set<String> cfgFlag = new HashSet<>()
+
+    String getOpCodeVariantName() {
+        return opcodeName.replaceAll("-", "_").replaceAll("/", "_").toUpperCase();
+    }
+}
+
+class Format implements Comparable<Format> {
+    int formatIdx
+    int codeSize
+    String fieldName
+
+    @Override
+    int compareTo(Format o) {
+        return this.fieldName.compareTo(o.fieldName)
+    }
+}
+
+task generateSource(type: Copy) {
+    def baseDir = project.file("${project.buildDir}/generated/java")
+    baseDir.deleteDir()
+    baseDir.mkdirs()
+
+    List<Dop> dops = new ArrayList<>();
+
+    def formatMap = [:]
+
+    StringBuilder parsSb = new StringBuilder();
+    def opcodeFile = project.file("src/main/resources/opcodes.txt")
+
+    Pattern p = Pattern.compile("op\\s+([0-9a-fA-F]+)\\s+(\\S+)\\s+(\\S+)\\s+(\\S+)\\s+(\\S+)\\s+(\\S+)\\s*")
+    //1: opcode
+    //2: name
+    //3: format
+    //4: hasResult
+    //5: ref(index type)
+    //6: cfg flag
+
+    opcodeFile.eachLine { line ->
+        Matcher m = p.matcher(line)
+        if (m.matches()) {
+            Dop dop = new Dop()
+
+            dop.opcode = Integer.valueOf(m.group(1), 16)
+            dop.opcodeName = m.group(2)
+
+            String formatName = m.group(3)
+            Format format = formatMap.get(formatName)
+            if (format == null) {
+                format = new Format()
+                format.codeSize = Integer.parseInt(formatName.substring(0, 1))
+                format.fieldName = "FORMAT_" + formatName.toUpperCase()
+
+                formatMap.put(formatName, format)
+            }
+            dop.format = format
+
+            dop.hasResult = Boolean.valueOf(m.group(4))
+            dop.ref = m.group(5)
+            m.group(6).split("\\|").each {e -> dop.cfgFlag.add(e)}
+
+
+            dops.add(dop)
+        }
+
+
+        List formats = formatMap.values().stream()
+            .sorted()
+            .collect(Collectors.toList())
+
+
+        int idx = 0
+
+        for (Format f : formats) {
+            f.formatIdx = idx++
+        }
+
+        generateFormatsSource(formats, baseDir)
+
+        generateDopsSource(dops, baseDir)
+    }
+
+
+}
+
+def void generateFormatsSource(def formats, def baseDir) {
+    TypeSpec.Builder formatsClassBuilder = TypeSpec.classBuilder("DopFormats")
+            .addModifiers(Modifier.PUBLIC)
+
+    formats.each {format ->
+        FieldSpec.Builder formatFieldBuilder =
+                FieldSpec.builder(int.class, format.fieldName)
+                        .addModifiers(Modifier.PUBLIC , Modifier.STATIC ,Modifier.FINAL)
+        formatFieldBuilder.initializer("0x" + Integer.toString(format.formatIdx, 16))
+        formatsClassBuilder.addField(formatFieldBuilder.build())
+    }
+
+    ClassName formatClass = ClassName.get("com.baidu.titan.dex", "DopFormat")
+    ArrayTypeName formatArrayType = ArrayTypeName.of(formatClass)
+
+    FieldSpec.Builder formatArrayFieldBuilder =
+            FieldSpec.builder(formatArrayType, "FORMATS")
+                    .addModifiers(Modifier.PRIVATE , Modifier.STATIC ,Modifier.FINAL)
+                    .initializer('new $T[256]', formatClass)
+    formatsClassBuilder.addField(formatArrayFieldBuilder.build())
+
+    MethodSpec.Builder formatForMethodBuilder =
+            MethodSpec.methodBuilder("formatFor")
+                    .addModifiers(Modifier.PUBLIC, Modifier.STATIC)
+                    .addParameter(int.class, "format")
+                    .returns(formatClass)
+                    .addStatement('return $N[$N]', "FORMATS", "format")
+    formatsClassBuilder.addMethod(formatForMethodBuilder.build())
+
+    CodeBlock.Builder clinitBlockBuilder = new CodeBlock.Builder()
+    formats.each { format ->
+        clinitBlockBuilder.addStatement('$N[$L] = new $T($L, $S)',
+                "FORMATS",
+                format.fieldName,
+                formatClass,
+                format.codeSize,
+                format.fieldName)
+    }
+
+    formatsClassBuilder.addStaticBlock(clinitBlockBuilder.build())
+
+    JavaFile formatsJavaFile =
+            JavaFile.builder("com.baidu.titan.dex", formatsClassBuilder.build()).build()
+    formatsJavaFile.writeTo(baseDir)
+}
+
+
+def void generateDopsSource(def dops, def baseDir) {
+    TypeSpec.Builder dopsClassBuilder = TypeSpec.classBuilder("Dops")
+            .addModifiers(Modifier.PUBLIC)
+
+    dops.each {dop ->
+        FieldSpec.Builder dopcodeFieldBuilder =
+                FieldSpec.builder(int.class, dop.getOpCodeVariantName())
+                        .addModifiers(Modifier.PUBLIC , Modifier.STATIC ,Modifier.FINAL)
+        dopcodeFieldBuilder.initializer("0x" + Integer.toString(dop.opcode, 16))
+        dopsClassBuilder.addField(dopcodeFieldBuilder.build())
+    }
+
+    ClassName dopClass = ClassName.get("com.baidu.titan.dex", "Dop")
+    ArrayTypeName dopArrayType = ArrayTypeName.of(dopClass)
+
+    FieldSpec.Builder dopArrayFieldBuilder =
+            FieldSpec.builder(dopArrayType, "DOPS")
+                    .addModifiers(Modifier.PRIVATE , Modifier.STATIC ,Modifier.FINAL)
+                    .initializer('new $T[256]', dopClass)
+    dopsClassBuilder.addField(dopArrayFieldBuilder.build())
+
+    MethodSpec.Builder dopForMethodBuilder =
+            MethodSpec.methodBuilder("dopFor")
+                    .addModifiers(Modifier.PUBLIC, Modifier.STATIC)
+                    .addParameter(int.class, "opcode")
+                    .returns(dopClass)
+                    .addStatement('return $N[$N]', "DOPS", "opcode")
+    dopsClassBuilder.addMethod(dopForMethodBuilder.build())
+
+    CodeBlock.Builder clinitBlockBuilder = new CodeBlock.Builder()
+    dops.each { dop ->
+        ArrayList<String> cfgFlagStrs = new ArrayList<>()
+        StringBuilder flagStr = new StringBuilder()
+        if (dop.cfgFlag.contains("continue")) {
+            cfgFlagStrs.add("Dop.FLAG_CFG_CONTINUE")
+        }
+        if (dop.cfgFlag.contains("branch")) {
+            cfgFlagStrs.add("Dop.FLAG_CFG_BRANCH")
+        }
+        if (dop.cfgFlag.contains("switch")) {
+            cfgFlagStrs.add("Dop.FLAG_CFG_SWITCH")
+        }
+        if (dop.cfgFlag.contains("throw")) {
+            cfgFlagStrs.add("Dop.FLAG_CFG_THROW")
+        }
+        if (dop.cfgFlag.contains("return")) {
+            cfgFlagStrs.add("Dop.FLAG_CFG_RETURN")
+        }
+
+        if (dop.ref in ["type-ref", "string-ref", "method-ref", "field-ref", "method-and-proto-ref",
+                        "call-site-ref", "method-handle-ref", "proto-ref", "primitive-ref",
+                        "array-data-ref"]) {
+            cfgFlagStrs.add("Dop.FLAG_CONST")
+        }
+
+        java.util.Iterator<String> flagIt = cfgFlagStrs.iterator()
+        while (flagIt.hasNext()) {
+            flagStr.append(flagIt.next())
+            if (flagIt.hasNext()) {
+                flagStr.append(" | ")
+            }
+        }
+
+        clinitBlockBuilder.addStatement('$N[$L] = new $T($L, $S, $L, $L, $L)',
+                "DOPS",
+                dop.getOpCodeVariantName(),
+                dopClass,
+                dop.getOpCodeVariantName(),
+                dop.opcodeName,
+                Boolean.toString(dop.hasResult),
+                flagStr.toString(),
+                "DopFormats." + dop.format.fieldName)
+    }
+
+    dopsClassBuilder.addStaticBlock(clinitBlockBuilder.build())
+
+
+    JavaFile dopsJavaFile = JavaFile.builder("com.baidu.titan.dex", dopsClassBuilder.build()).build()
+    dopsJavaFile.writeTo(baseDir)
+}
+
+
+compileJava.dependsOn generateSource
+
+
+apply from: rootProject.file('buildSrc/release-publishing.gradle')

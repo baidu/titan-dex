@@ -1,0 +1,12 @@
+rootProject.name = 'Titan-Dex'
+
+// titan-dex begin
+include ':dex-core'
+include ':dex-io'
+include ':dex-lib'
+include ':dex-extensions'
+include ':dex-smali'
+include ':dex-test'
+include ':dex-linker'
+include ':dex-analyzer'
+// titan-dex end

@@ -1,0 +1,66 @@
+def isReleaseBuild() {
+    return version.contains("SNAPSHOT") == false
+}
+
+def getReleaseRepositoryUrl() {
+    String key = "RELEASE_REPOSITORY_URL"
+    return readPropertyFromLocalProperties(key, getProperty(key, null))
+}
+
+def getSnapshotRepositoryUrl() {
+    String key = "SNAPSHOT_REPOSITORY_URL"
+    return readPropertyFromLocalProperties(key, getProperty(key, null))
+}
+
+def getRepositoryUrl() {
+    return isReleaseBuild() ? getReleaseRepositoryUrl() : getSnapshotRepositoryUrl()
+}
+
+def needCredentials() {
+    String key = "NEED_CREDENTIALS"
+    String value = readPropertyFromLocalProperties(key, getProperty(key, "true"));
+    return "true".equals(value)
+}
+
+
+def getRepositoryUsername() {
+    String key = "REPOSITORY_USERNAME"
+    return readPropertyFromLocalProperties(key, getProperty(key, null))
+}
+
+def getRepositoryPassword() {
+    String key = "REPOSITORY_PASSWORD"
+    return readPropertyFromLocalProperties(key, getProperty(key, null))
+}
+
+def getProperty(String key, String defaultValue) {
+    String value =  hasProperty(key) ? property(key) : defaultValue
+    return value
+}
+
+def readPropertyFromLocalProperties(String key, String defaultValue) {
+    Properties properties = new Properties()
+    try {
+        properties.load(project.rootProject.file('local.properties').newDataInputStream())
+    } catch (Exception e) {
+        println("load local properties failed msg:${e.message}")
+    }
+    String value = properties.getProperty(key)
+    if (value == null) {
+        return defaultValue
+    }
+    return value
+}
+
+ext {
+    isReleaseBuild = this.&isReleaseBuild
+    getReleaseRepositoryUrl = this.&getReleaseRepositoryUrl
+    getSnapshotRepositoryUrl = this.&getSnapshotRepositoryUrl
+    getRepositoryUrl = this.&getRepositoryUrl
+    getRepositoryUsername = this.&getRepositoryUsername
+    getRepositoryPassword = this.&getRepositoryPassword
+    needCredentials = this.&needCredentials
+
+
+
+}

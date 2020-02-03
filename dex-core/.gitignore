@@ -1,0 +1,8 @@
+*.iml
+.gradle
+/local.properties
+#除非有必要，否则不要添加.idea目录下的文件到代码仓库中
+/.idea
+.DS_Store
+/build
+/captures

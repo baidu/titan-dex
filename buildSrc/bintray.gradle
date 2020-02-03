@@ -1,0 +1,43 @@
+apply plugin: 'com.jfrog.bintray'
+
+version = libraryVersion
+
+bintrayUpload.dependsOn assemble
+if (project.hasProperty("android")){
+    bintrayUpload.dependsOn androidSourcesJar
+//    bintrayUpload.dependsOn androidJavadocsJar
+} else {
+    bintrayUpload.dependsOn sourcesJar
+//    bintrayUpload.dependsOn javadocJar
+}
+
+Properties properties = new Properties()
+properties.load(project.rootProject.file('local.properties').newDataInputStream())
+
+bintray {
+    user = properties.getProperty("bintray.user")
+    key = properties.getProperty("bintray.apikey")
+
+//    configurations = ['archives']
+    publications = ['Titan']
+    pkg {
+        repo = bintrayRepo
+        name = bintrayName
+        desc = libraryDescription
+//        userOrg = bintrayUserOrg
+
+        websiteUrl = siteUrl
+        vcsUrl = gitUrl
+        licenses = allLicenses
+        publish = true
+        publicDownloadNumbers = true
+        version {
+            desc = libraryDescription
+            gpg {
+                sign = true //Determines whether to GPG sign the files. The default is false
+//                passphrase = properties.getProperty("bintray.gpg.password")
+                //Optional. The passphrase for GPG signing'
+            }
+        }
+    }
+}

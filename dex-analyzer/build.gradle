@@ -1,0 +1,17 @@
+apply plugin: 'java'
+
+[compileJava, compileTestJava, javadoc]*.options*.encoding = 'UTF-8'
+
+sourceCompatibility = 1.7
+
+dependencies {
+    implementation fileTree(dir: 'libs', include: ['*.jar'])
+    testCompile group: 'junit', name: 'junit', version: '4.11'
+    implementation project(':dex-core')
+    implementation project(':dex-io')
+    compile project(':dex-linker')
+//    implementation 'com.google.guava:guava:26.0-jre'
+}
+
+
+apply from: rootProject.file('buildSrc/release-publishing.gradle')
