@@ -57,6 +57,11 @@ import com.baidu.titan.dexlib.dx.util.ByteArray;
 import com.baidu.titan.dexlib.dx.util.Hex;
 
 import java.io.IOException;
+import java.util.AbstractMap;
+import java.util.Collections;
+import java.util.Map;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 /**
  * Standard subclass of {@link AttributeFactory}, which knows how to parse
@@ -75,112 +80,75 @@ public class StdAttributeFactory
         // This space intentionally left blank.
     }
 
+    private interface AttributeMethod {
+        Attribute attributeMethod(DirectClassFile cf, int offset, int length, ParseObserver observer);
+    }
+
+    private final Map<String, AttributeMethod> CLASS_ATTRIBUTE_METHOD = Collections.unmodifiableMap(Stream.of(
+            new AbstractMap.SimpleEntry<String, AttributeMethod>(AttDeprecated.ATTRIBUTE_NAME, this::deprecated),
+            new AbstractMap.SimpleEntry<String, AttributeMethod>(AttEnclosingMethod.ATTRIBUTE_NAME, this::enclosingMethod),
+            new AbstractMap.SimpleEntry<String, AttributeMethod>(AttInnerClasses.ATTRIBUTE_NAME, this::innerClasses),
+            new AbstractMap.SimpleEntry<String, AttributeMethod>(AttRuntimeInvisibleAnnotations.ATTRIBUTE_NAME, this::runtimeInvisibleAnnotations),
+            new AbstractMap.SimpleEntry<String, AttributeMethod>(AttRuntimeVisibleAnnotations.ATTRIBUTE_NAME, this::runtimeVisibleAnnotations),
+            new AbstractMap.SimpleEntry<String, AttributeMethod>(AttSynthetic.ATTRIBUTE_NAME, this::synthetic),
+            new AbstractMap.SimpleEntry<String, AttributeMethod>(AttSignature.ATTRIBUTE_NAME, this::signature),
+            new AbstractMap.SimpleEntry<String, AttributeMethod>(AttSourceFile.ATTRIBUTE_NAME, this::sourceFile)
+            ).collect(Collectors.toMap(AbstractMap.SimpleEntry::getKey, AbstractMap.SimpleEntry::getValue)));
+
+    private final Map<String, AttributeMethod> FIELD_ATTRIBUTE_METHOD = Collections.unmodifiableMap(Stream.of(
+            new AbstractMap.SimpleEntry<String, AttributeMethod>(AttConstantValue.ATTRIBUTE_NAME, this::constantValue),
+            new AbstractMap.SimpleEntry<String, AttributeMethod>(AttDeprecated.ATTRIBUTE_NAME, this::deprecated),
+            new AbstractMap.SimpleEntry<String, AttributeMethod>(AttRuntimeInvisibleAnnotations.ATTRIBUTE_NAME, this::runtimeInvisibleAnnotations),
+            new AbstractMap.SimpleEntry<String, AttributeMethod>(AttRuntimeVisibleAnnotations.ATTRIBUTE_NAME, this::runtimeVisibleAnnotations),
+            new AbstractMap.SimpleEntry<String, AttributeMethod>(AttSignature.ATTRIBUTE_NAME, this::signature),
+            new AbstractMap.SimpleEntry<String, AttributeMethod>(AttSynthetic.ATTRIBUTE_NAME, this::synthetic)
+    ).collect(Collectors.toMap(AbstractMap.SimpleEntry::getKey, AbstractMap.SimpleEntry::getValue)));
+
+    private final Map<String, AttributeMethod> METHOD_ATTRIBUTE_METHOD = Collections.unmodifiableMap(Stream.of(
+            new AbstractMap.SimpleEntry<String, AttributeMethod>(AttAnnotationDefault.ATTRIBUTE_NAME, this::annotationDefault),
+            new AbstractMap.SimpleEntry<String, AttributeMethod>(AttCode.ATTRIBUTE_NAME, this::code),
+            new AbstractMap.SimpleEntry<String, AttributeMethod>(AttDeprecated.ATTRIBUTE_NAME, this::deprecated),
+            new AbstractMap.SimpleEntry<String, AttributeMethod>(AttExceptions.ATTRIBUTE_NAME, this::exceptions),
+            new AbstractMap.SimpleEntry<String, AttributeMethod>(AttRuntimeInvisibleAnnotations.ATTRIBUTE_NAME, this::runtimeInvisibleAnnotations),
+            new AbstractMap.SimpleEntry<String, AttributeMethod>(AttRuntimeVisibleAnnotations.ATTRIBUTE_NAME, this::runtimeVisibleAnnotations),
+            new AbstractMap.SimpleEntry<String, AttributeMethod>(AttRuntimeInvisibleParameterAnnotations.ATTRIBUTE_NAME, this::runtimeInvisibleParameterAnnotations),
+            new AbstractMap.SimpleEntry<String, AttributeMethod>(AttRuntimeVisibleParameterAnnotations.ATTRIBUTE_NAME, this::runtimeVisibleParameterAnnotations),
+            new AbstractMap.SimpleEntry<String, AttributeMethod>(AttSignature.ATTRIBUTE_NAME, this::signature),
+            new AbstractMap.SimpleEntry<String, AttributeMethod>(AttSynthetic.ATTRIBUTE_NAME, this::synthetic)
+    ).collect(Collectors.toMap(AbstractMap.SimpleEntry::getKey, AbstractMap.SimpleEntry::getValue)));
+
+    private final Map<String, AttributeMethod> CODE_ATTRIBUTE_METHOD = Collections.unmodifiableMap(Stream.of(
+            new AbstractMap.SimpleEntry<String, AttributeMethod>(AttLineNumberTable.ATTRIBUTE_NAME, this::lineNumberTable),
+            new AbstractMap.SimpleEntry<String, AttributeMethod>(AttLocalVariableTable.ATTRIBUTE_NAME, this::localVariableTable),
+            new AbstractMap.SimpleEntry<String, AttributeMethod>(AttLocalVariableTypeTable.ATTRIBUTE_NAME, this::localVariableTypeTable)
+    ).collect(Collectors.toMap(AbstractMap.SimpleEntry::getKey, AbstractMap.SimpleEntry::getValue)));
+
     /** {@inheritDoc} */
     @Override
     protected Attribute parse0(DirectClassFile cf, int context, String name,
                                int offset, int length, ParseObserver observer) {
         switch (context) {
             case CTX_CLASS: {
-                if (name == AttDeprecated.ATTRIBUTE_NAME) {
-                    return deprecated(cf, offset, length, observer);
-                }
-                if (name == AttEnclosingMethod.ATTRIBUTE_NAME) {
-                    return enclosingMethod(cf, offset, length, observer);
-                }
-                if (name == AttInnerClasses.ATTRIBUTE_NAME) {
-                    return innerClasses(cf, offset, length, observer);
-                }
-                if (name == AttRuntimeInvisibleAnnotations.ATTRIBUTE_NAME) {
-                    return runtimeInvisibleAnnotations(cf, offset, length,
-                            observer);
-                }
-                if (name == AttRuntimeVisibleAnnotations.ATTRIBUTE_NAME) {
-                    return runtimeVisibleAnnotations(cf, offset, length,
-                            observer);
-                }
-                if (name == AttSynthetic.ATTRIBUTE_NAME) {
-                    return synthetic(cf, offset, length, observer);
-                }
-                if (name == AttSignature.ATTRIBUTE_NAME) {
-                    return signature(cf, offset, length, observer);
-                }
-                if (name == AttSourceFile.ATTRIBUTE_NAME) {
-                    return sourceFile(cf, offset, length, observer);
+                if (CLASS_ATTRIBUTE_METHOD.containsKey(name)) {
+                    return CLASS_ATTRIBUTE_METHOD.get(name).attributeMethod(cf, offset, length, observer);
                 }
                 break;
             }
             case CTX_FIELD: {
-                if (name == AttConstantValue.ATTRIBUTE_NAME) {
-                    return constantValue(cf, offset, length, observer);
-                }
-                if (name == AttDeprecated.ATTRIBUTE_NAME) {
-                    return deprecated(cf, offset, length, observer);
-                }
-                if (name == AttRuntimeInvisibleAnnotations.ATTRIBUTE_NAME) {
-                    return runtimeInvisibleAnnotations(cf, offset, length,
-                            observer);
-                }
-                if (name == AttRuntimeVisibleAnnotations.ATTRIBUTE_NAME) {
-                    return runtimeVisibleAnnotations(cf, offset, length,
-                            observer);
-                }
-                if (name == AttSignature.ATTRIBUTE_NAME) {
-                    return signature(cf, offset, length, observer);
-                }
-                if (name == AttSynthetic.ATTRIBUTE_NAME) {
-                    return synthetic(cf, offset, length, observer);
+                if (FIELD_ATTRIBUTE_METHOD.containsKey(name)) {
+                    return FIELD_ATTRIBUTE_METHOD.get(name).attributeMethod(cf, offset, length, observer);
                 }
                 break;
             }
             case CTX_METHOD: {
-                if (name == AttAnnotationDefault.ATTRIBUTE_NAME) {
-                    return annotationDefault(cf, offset, length, observer);
-                }
-                if (name == AttCode.ATTRIBUTE_NAME) {
-                    return code(cf, offset, length, observer);
-                }
-                if (name == AttDeprecated.ATTRIBUTE_NAME) {
-                    return deprecated(cf, offset, length, observer);
-                }
-                if (name == AttExceptions.ATTRIBUTE_NAME) {
-                    return exceptions(cf, offset, length, observer);
-                }
-                if (name == AttRuntimeInvisibleAnnotations.ATTRIBUTE_NAME) {
-                    return runtimeInvisibleAnnotations(cf, offset, length,
-                            observer);
-                }
-                if (name == AttRuntimeVisibleAnnotations.ATTRIBUTE_NAME) {
-                    return runtimeVisibleAnnotations(cf, offset, length,
-                            observer);
-                }
-                if (name == AttRuntimeInvisibleParameterAnnotations.
-                        ATTRIBUTE_NAME) {
-                    return runtimeInvisibleParameterAnnotations(
-                            cf, offset, length, observer);
-                }
-                if (name == AttRuntimeVisibleParameterAnnotations.
-                        ATTRIBUTE_NAME) {
-                    return runtimeVisibleParameterAnnotations(
-                            cf, offset, length, observer);
-                }
-                if (name == AttSignature.ATTRIBUTE_NAME) {
-                    return signature(cf, offset, length, observer);
-                }
-                if (name == AttSynthetic.ATTRIBUTE_NAME) {
-                    return synthetic(cf, offset, length, observer);
+                if (METHOD_ATTRIBUTE_METHOD.containsKey(name)) {
+                    return METHOD_ATTRIBUTE_METHOD.get(name).attributeMethod(cf, offset, length, observer);
                 }
                 break;
             }
             case CTX_CODE: {
-                if (name == AttLineNumberTable.ATTRIBUTE_NAME) {
-                    return lineNumberTable(cf, offset, length, observer);
-                }
-                if (name == AttLocalVariableTable.ATTRIBUTE_NAME) {
-                    return localVariableTable(cf, offset, length, observer);
-                }
-                if (name == AttLocalVariableTypeTable.ATTRIBUTE_NAME) {
-                    return localVariableTypeTable(cf, offset, length,
-                            observer);
+                if (CODE_ATTRIBUTE_METHOD.containsKey(name)) {
+                    return CODE_ATTRIBUTE_METHOD.get(name).attributeMethod(cf, offset, length, observer);
                 }
                 break;
             }
