@@ -18,8 +18,8 @@ Titan-Dex是面向Android Dalvik(ART)字节码（bytecode）格式的操纵框�
 最新版本已经发布到jcenter上
 
 ```
-implementation("com.baidu.titan.dex:dex-core:1.0.6")
-implementation("com.baidu.titan.dex:dex-io:1.0.6")
+implementation("com.baidu.titan.dex:dex-core:1.0.9")
+implementation("com.baidu.titan.dex:dex-io:1.0.9")
 ```
 
 ## 使用示例

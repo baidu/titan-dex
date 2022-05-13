@@ -440,9 +440,11 @@ class DexCodeReader {
             case Dops.IPUT_BYTE:
             case Dops.IPUT_CHAR:
             case Dops.IPUT_SHORT: {
+                boolean isWide = dop.opcode == Dops.IGET_WIDE || dop.opcode == Dops.IPUT_WIDE;
                 regList = DexRegisterList.make(
                         makeDexRegister(
-                                instBuffer.uinstA(offset), DexRegister.REG_WIDTH_ONE_WORD),
+                                instBuffer.uinstA(offset), isWide ?
+                                        DexRegister.REG_WIDTH_DOUBLE_WORD : DexRegister.REG_WIDTH_ONE_WORD),
                         makeDexRegister(
                                 instBuffer.uinstB(offset), DexRegister.REG_WIDTH_ONE_WORD));
                 FieldId fieldId = mDex.fieldIds().get(
@@ -471,8 +473,9 @@ class DexCodeReader {
             case Dops.SPUT_BYTE:
             case Dops.SPUT_CHAR:
             case Dops.SPUT_SHORT: {
+                boolean isWide = dop.opcode == Dops.SGET_WIDE || dop.opcode == Dops.SPUT_WIDE;
                 regList = DexRegisterList.make(makeDexRegister(instBuffer.uinstAA(offset),
-                        DexRegister.REG_WIDTH_ONE_WORD));
+                        isWide ? DexRegister.REG_WIDTH_DOUBLE_WORD : DexRegister.REG_WIDTH_ONE_WORD));
                 FieldId fieldId = mDex.fieldIds().get(
                         instBuffer.ushortWithInt(offset + 1));
                 dexConst = mFactory.dexConsts.createConstFieldRef(
@@ -1507,6 +1510,9 @@ class DexCodeReader {
                     int deltaLine = DexConstant.DebugOpcodes.DBG_LINE_BASE +
                             (adjustedOpcode % DexConstant.DebugOpcodes.DBG_LINE_RANGE);
                     lineNum = lineNum + deltaLine;
+                    if (codeAddress >= mDexLabels.length) {
+                        break;
+                    }
                     getOrCreateLabel(codeAddress);
                     ArrayList<Integer> lines = mLineNums[codeAddress];
                     if (lines == null) {

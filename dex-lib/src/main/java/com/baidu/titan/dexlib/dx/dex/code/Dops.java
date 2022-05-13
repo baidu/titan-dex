@@ -1226,4 +1226,17 @@ public final class Dops {
         int idx = opcode.getOpcode() - Opcodes.MIN_VALUE;
         DOPS[idx] = opcode;
     }
+
+    /**
+     * check if the opcode is 2addr op
+     *
+     * @param opcode {@code non-null;} the opcode
+     * @return true if the opcode is 2addr op, false otherwise
+     */
+    public static boolean is2AddrOp(Dop opcode) {
+        if (opcode.getOpcode() >= Opcodes.ADD_INT_2ADDR && opcode.getOpcode() <= Opcodes.REM_DOUBLE_2ADDR) {
+            return true;
+        }
+        return false;
+    }
 }
