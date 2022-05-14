@@ -99,16 +99,18 @@ public final class Dex {
      */
     public Dex(File file) throws IOException {
         if (FileUtils.hasArchiveSuffix(file.getName())) {
-            ZipFile zipFile = new ZipFile(file);
-            ZipEntry entry = zipFile.getEntry(DexFormat.DEX_IN_JAR_NAME);
-            if (entry != null) {
-                loadFrom(zipFile.getInputStream(entry));
-                zipFile.close();
-            } else {
-                throw new DexException("Expected " + DexFormat.DEX_IN_JAR_NAME + " in " + file);
+            try (ZipFile zipFile = new ZipFile(file)) {
+                ZipEntry entry = zipFile.getEntry(DexFormat.DEX_IN_JAR_NAME);
+                if (entry != null) {
+                    loadFrom(zipFile.getInputStream(entry));
+                } else {
+                    throw new DexException("Expected " + DexFormat.DEX_IN_JAR_NAME + " in " + file);
+                }
             }
         } else if (file.getName().endsWith(".dex")) {
-            loadFrom(new FileInputStream(file));
+            try (InputStream in = new FileInputStream(file)) {
+                loadFrom(in);
+            }
         } else {
             throw new DexException("unknown output extension: " + file);
         }
@@ -147,7 +149,6 @@ public final class Dex {
         while ((count = in.read(buffer)) != -1) {
             bytesOut.write(buffer, 0, count);
         }
-        in.close();
 
         this.data = ByteBuffer.wrap(bytesOut.toByteArray());
         this.data.order(ByteOrder.LITTLE_ENDIAN);
