@@ -13,7 +13,7 @@ Titan-Dex是面向Android Dalvik(ART)字节码（bytecode）格式的操纵框�
 * 支持基于Titan-Dex的多种扩展，比如multi-dex分包能力等。
 
 ## 快速开始
-使用上非常类似于[ASM框架](https://asm.ow2.io/asm4-guide.pdf)，如果需要修改或者新增Dalvki(ART)字节码，请同时参考[Android官方文档](https://source.android.com/devices/tech/dalvik/dalvik-bytecode)
+使用上非常类似于[ASM框架](https://asm.ow2.io/asm4-guide.pdf)，如果需要修改或者新增Dalvik(ART)字节码，请同时参考[Android官方文档](https://source.android.com/devices/tech/dalvik/dalvik-bytecode)
 
 最新版本已经发布到jcenter上
 
